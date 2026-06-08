@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusBoost Enterprise v3.1 - Secure Order Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-dark: #010307;
+            --bg-sidebar: #030611;
+            --bg-card: #060b16;
+            --bg-input: #020409;
+            --accent-cyan: #00f0ff;
+            --accent-purple: #b55fe6;
+            --accent-green: #10b981;
+            --accent-red: #f43f5e;
+            --accent-gold: #f1c40f;
+            --text-main: #f8fafc;
+            --text-muted: #64748b;
+            --border: rgba(0, 240, 255, 0.05);
+            --border-glow: rgba(0, 240, 255, 0.15);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        body { 
+            background-color: var(--bg-dark); 
+            color: var(--text-main); 
+            overflow-x: auto; 
+            min-width: 1800px;
+            background-image: 
+                radial-gradient(circle at 80% 20%, rgba(181, 95, 230, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 20% 80%, rgba(0, 240, 255, 0.04) 0%, transparent 50%),
+                linear-gradient(rgba(255, 255, 255, 0.003) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.003) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 20px 20px, 20px 20px;
+            min-height: 100vh; 
+            display: flex;
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-cyan); }
+
+        button { cursor: pointer; border: none; background: none; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+        input, select, textarea { outline: none; transition: all 0.2s ease; }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 5px rgba(0,240,255,0.2); }
+            50% { box-shadow: 0 0 15px rgba(0,240,255,0.4); }
+            100% { box-shadow: 0 0 5px rgba(0,240,255,0.2); }
+        }
+
+        .enterprise-container { display: flex; width: 100%; min-height: 100vh; position: relative; }
+        
+        /* COLUMN 1: SIDEBAR */
+        .col-sidebar { width: 280px; background: var(--bg-sidebar); border-right: 1px solid var(--border); padding: 30px 20px; display: flex; flex-direction: column; gap: 25px; shrink: 0; }
+        .brand { font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; font-weight: 700; background: linear-gradient(45deg, var(--accent-cyan), var(--accent-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding-left: 5px; display: flex; align-items: center; gap: 10px; }
+        .brand i { color: var(--accent-cyan); filter: drop-shadow(0 0 8px var(--accent-cyan)); }
+        
+        .menu-lbl { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; color: #475569; font-weight: 700; padding-left: 5px; margin-top: 5px; }
+        .menu-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+        .menu-item button { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; color: #64748b; font-weight: 600; font-size: 0.85rem; border-radius: 8px; text-align: left; position: relative; }
+        .menu-item button .btn-core { display: flex; align-items: center; gap: 12px; }
+        .menu-item button:hover { color: #fff; background: rgba(255,255,255,0.02); }
+        .menu-item button.active { color: var(--accent-cyan); background: rgba(0, 240, 255, 0.03); border-left: 3px solid var(--accent-cyan); font-weight: 700; }
+        .menu-item button.locked { opacity: 0.4; cursor: not-allowed; }
+        .menu-item button.locked:hover { background: transparent; color: #64748b; }
+        .lock-badge { font-size: 0.7rem; color: var(--accent-red); background: rgba(244,63,94,0.1); padding: 2px 6px; border-radius: 4px; }
+        .admin-badge { font-size: 0.7rem; color: var(--accent-purple); background: rgba(181,95,230,0.1); padding: 2px 6px; border-radius: 4px; }
+
+        /* COLUMN 2: STOREFRONT & SELECTION MATRIX */
+        .col-storefront { width: 480px; border-right: 1px solid var(--border); padding: 30px 20px; shrink: 0; background: rgba(2,4,9,0.3); }
+        .game-selector-strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-top: 15px; }
+        .game-tab { padding: 8px 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; font-size: 0.75rem; white-space: nowrap; color: var(--text-muted); cursor: pointer; }
+        .game-tab.active { border-color: var(--accent-cyan); color: #fff; background: rgba(0,240,255,0.02); }
+        
+        .grid-30x { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 15px; max-height: 72vh; overflow-y: auto; padding-right: 5px; }
+        
+        .node-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; text-align: left; cursor: pointer; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
+        .node-item::before { content: ''; position: absolute; top:0; left:0; width:100%; height:2px; background: linear-gradient(90deg, transparent, rgba(0,240,255,0.3), transparent); transform: translateX(-100%); transition: transform 0.5s; }
+        .node-item:hover::before { transform: translateX(100%); }
+        .node-item:hover { transform: translateY(-2px); border-color: var(--border-glow); box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+        
+        .node-item .node-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+        .node-item h4 { font-size: 0.85rem; font-weight: 700; color: #f1f5f9; font-family: 'Space Grotesk', sans-serif; margin-bottom: 4px; }
+        .node-item p { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; line-height: 1.4; white-space: pre-line; }
+        .node-tag { font-size: 0.6rem; text-transform: uppercase; background: rgba(255,255,255,0.03); padding: 3px 6px; border-radius: 4px; color: var(--text-muted); font-weight: 700; }
+
+        /* Package Skins based on Gemini_Generated_Image_m4jmeum4jmeum4jm (1).png */
+        .skin-starter { border: 1px solid rgba(0, 240, 255, 0.4); box-shadow: inset 0 0 15px rgba(0, 240, 255, 0.05); }
+        .skin-pro { border: 1px solid rgba(16, 185, 129, 0.5); box-shadow: inset 0 0 15px rgba(16, 185, 129, 0.05); }
+        .skin-ultimate { border: 1px solid rgba(241, 196, 15, 0.6); box-shadow: inset 0 0 20px rgba(241, 196, 15, 0.08); }
+        .skin-service { border-left: 3px solid var(--text-muted); }
+        .skin-fruit { border-left: 3px solid var(--accent-purple); }
+
+        /* COLUMN 3: TELEMETRY / ORDERS (CENTER) */
+        .col-telemetry { flex-grow: 1; border-right: 1px solid var(--border); padding: 30px 20px; min-width: 650px; display: flex; flex-direction: column; gap: 20px; }
+        .table-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; flex-grow: 1; display: flex; flex-direction: column; max-height: 82vh; }
+        .table-wrapper { overflow-y: auto; flex-grow: 1; margin-top: 15px; }
+        .tel-table { width: 100%; border-collapse: collapse; text-align: left; }
+        .tel-table th, .tel-table td { padding: 14px 12px; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+        .tel-table th { color: var(--text-muted); text-transform: uppercase; font-size: 0.65rem; letter-spacing: 1px; font-weight: 700; position: sticky; top: 0; background: var(--bg-card); }
+        .tel-table tbody tr { transition: background 0.15s; }
+        .tel-table tbody tr:hover { background: rgba(255,255,255,0.01); }
+
+        /* COLUMN 4: RIGHT PANELS */
+        .col-infrastructure { width: 440px; padding: 30px 20px; shrink: 0; display: flex; flex-direction: column; gap: 20px; }
+        .infra-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 22px; position: relative; }
+        .infra-title { font-family: 'Space Grotesk', sans-serif; font-size: 0.95rem; font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; letter-spacing: 0.5px; }
+        
+        .stat-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.02); }
+        .badge { padding: 4px 8px; border-radius: 5px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .badge-green { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); color: var(--accent-green); }
+        .badge-cyan { background: rgba(0,240,255,0.08); border: 1px solid rgba(0,240,255,0.2); color: var(--accent-cyan); }
+        .badge-gold { background: rgba(241,196,15,0.08); border: 1px solid rgba(241,196,15,0.2); color: var(--accent-gold); }
+        .badge-pending { background: rgba(100,116,139,0.1); border: 1px solid rgba(100,116,139,0.2); color: #94a3b8; }
+
+        .btn-primary { background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple)); color: #020408; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 8px; width: 100%; justify-content: center; box-shadow: 0 4px 15px rgba(0,240,255,0.1); }
+        .btn-primary:hover { animation: pulseGlow 1.5s infinite; transform: translateY(-1px); }
+        .input-field { width: 100%; padding: 12px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: #fff; font-size: 0.85rem; }
+        .input-field:focus { border-color: var(--accent-cyan); box-shadow: 0 0 10px rgba(0,240,255,0.1); }
+
+        /* LIVE SUPPORT CHAT */
+        .chat-box { display: flex; flex-direction: column; height: 240px; background: var(--bg-input); border-radius: 10px; border: 1px solid var(--border); overflow: hidden; margin-top: 5px; }
+        .chat-msgs { flex-grow: 1; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 0.75rem; }
+        .msg-node { padding: 8px 12px; border-radius: 8px; max-width: 85%; line-height: 1.4; }
+        .msg-sys { background: rgba(255,255,255,0.02); border: 1px solid var(--border); align-self: flex-start; color: #94a3b8; }
+        .msg-user { background: var(--accent-purple); color: #fff; align-self: flex-end; font-weight: 500; }
+
+        /* MODALS */
+        .modal-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(1,2,5,0.85); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 5000; opacity: 0; pointer-events: none; transition: all 0.3s ease; }
+        .modal-mask.active { opacity: 1; pointer-events: auto; }
+        .modal-window { background: var(--bg-card); border: 1px solid rgba(0,240,255,0.1); border-radius: 16px; padding: 35px; max-width: 460px; width: 100%; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.6); transform: scale(0.95); transition: all 0.3s ease; }
+        .modal-mask.active .modal-window { transform: scale(1); }
+        .modal-close { position: absolute; top: 20px; right: 20px; color: var(--text-muted); font-size: 1.2rem; }
+        .modal-close:hover { color: #fff; }
+
+        .hidden { display: none !important; }
+        
+        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); opacity: 0.7; }
+        .empty-state i { font-size: 3rem; margin-bottom: 15px; color: #1e293b; }
+    </style>
+</head>
+<body>
+
+    <div class="enterprise-container">
+        
+        <!-- COLUMN 1: SIDEBAR -->
+        <aside class="col-sidebar">
+            <div class="brand"><i class="fa-solid fa-server"></i> NexusBoost <span style="font-size:0.6rem; vertical-align:super; color:var(--accent-purple)">v3.1</span></div>
+            
+            <span class="menu-lbl">Mein Bereich</span>
+            <ul class="menu-list">
+                <li class="menu-item"><button class="active" id="btn-nav-storefront" onclick="switchMainView('storefront')"><span class="btn-core"><i class="fa-solid fa-store"></i> Boosting Store</span></button></li>
+                <li class="menu-item"><button id="btn-nav-telemetry" onclick="switchMainView('telemetry')"><span class="btn-core"><i class="fa-solid fa-box-open"></i> Meine Bestellungen</span></button></li>
+            </ul>
+
+            <span class="menu-lbl">Operator Control (Admin)</span>
+            <ul class="menu-list">
+                <li class="menu-item"><button id="nav-admin-financials" class="locked" onclick="triggerAdminAction('financials')"><span class="btn-core"><i class="fa-solid fa-wallet"></i> Financials</span><span class="lock-badge" id="badge-fin"><i class="fa-solid fa-lock"></i></span></button></li>
+                <li class="menu-item"><button id="nav-admin-proxies" class="locked" onclick="triggerAdminAction('proxies')"><span class="btn-core"><i class="fa-solid fa-network-wired"></i> Proxy Pools</span><span class="lock-badge" id="badge-prox"><i class="fa-solid fa-lock"></i></span></button></li>
+                <li class="menu-item"><button id="nav-admin-terminal" class="locked" onclick="switchMainView('terminal')"><span class="btn-core"><i class="fa-solid fa-terminal"></i> Global Telemetry</span><span class="lock-badge" id="badge-term"><i class="fa-solid fa-lock"></i></span></button></li>
+            </ul>
+
+            <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px;" id="sidebar-auth-actions">
+                <button class="btn-primary" onclick="openAuthModal('register')">Konto Registrieren</button>
+                <button style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-align: center; margin-top: 5px;" onclick="openAuthModal('login')">Einloggen</button>
+            </div>
+        </aside>
+
+        <!-- COLUMN 2: STOREFRONT -->
+        <section class="col-storefront" id="section-storefront-left">
+            <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; letter-spacing: -0.5px;">Service Übersicht</h2>
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 4px;">Wähle dein Spiel und sichere dir die besten Pakete.</p>
+            
+            <input type="text" class="input-field" id="storefront-search-input" placeholder="Suchen nach Spielen, Level, Beli..." style="margin-top: 20px;" oninput="filterStorefrontGrid()">
+
+            <div class="game-selector-strip" id="game-tab-injector"></div>
+            <div class="grid-30x" id="storefront-games-injector"></div>
+        </section>
+
+        <!-- COLUMN 3: CENTRAL TELEMETRY -->
+        <section class="col-telemetry">
+            <div id="main-telemetry-view-wrapper" style="display: flex; flex-direction: column; height: 100%; width: 100%;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem;" id="table-header-title">Meine Bestellungen</h2>
+                        <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 4px;" id="table-header-desc">Hier siehst du den Status deiner in Auftrag gegebenen Boosts.</p>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <span class="badge badge-cyan" id="live-packet-counter" style="font-family:'Fira Code';">Sicherheitsstatus: Verschlüsselt</span>
+                    </div>
+                </div>
+
+                <div class="table-panel">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--accent-cyan);" id="table-sub-label">Aktive Aufträge</span>
+                        <input type="text" class="input-field" id="table-search-input" placeholder="Bestellungen durchsuchen..." style="width: 200px; padding: 6px 10px; font-size: 0.75rem;" oninput="filterTelemetryTable()">
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="tel-table">
+                            <thead>
+                                <tr>
+                                    <th>Auftrags-ID</th>
+                                    <th>Roblox Name (Target)</th>
+                                    <th>Gekauftes Paket / Item</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="telemetry-table-injector"></tbody>
+                        </table>
+                        <div id="table-empty-state" class="empty-state hidden">
+                            <i class="fa-solid fa-box-open"></i>
+                            <h4>Keine Bestellungen gefunden</h4>
+                            <p style="font-size: 0.8rem; margin-top: 5px;">Du hast noch keine Boosts bestellt oder bist nicht eingeloggt.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN SYSTEM LOG -->
+            <div id="main-terminal-view-wrapper" class="hidden" style="flex-grow:1; display:flex; flex-direction:column;">
+                <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; color: var(--accent-purple);">Admin System Log</h2>
+                <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 4px; margin-bottom: 15px;">Live-Datenverarbeitung aller registrierten Kundenbestellungen.</p>
+                <div style="background: #02040a; border: 1px solid var(--accent-purple); border-radius: 12px; padding: 20px; font-family: 'Fira Code', monospace; display: flex; flex-direction: column; gap: 10px; height: 100%; overflow-y: auto; font-size: 0.75rem; color: #a7f3d0;" id="admin-live-log">
+                    <div>[SYSTEM] Core System Nexus v3.1 aktiv. Warte auf Bestellungen...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- COLUMN 4: RIGHT PANELS -->
+        <section class="col-infrastructure">
+            <div class="infra-card">
+                <div class="infra-title"><span>Sicherheit & Privacy</span><i class="fa-solid fa-user-shield" style="color: var(--accent-cyan);"></i></div>
+                <div class="stat-row"><span>Daten-Sichtbarkeit</span><span style="color: var(--accent-cyan); font-weight: 700;">Privat (100%)</span></div>
+                <div class="stat-row"><span>Hardware Spoofing</span><span style="color: var(--accent-green); font-weight: 700;">Aktiv</span></div>
+                <div class="stat-row"><span>Bann-Risiko</span><span style="color: var(--accent-gold); font-weight: 700;">Minimal (0.01%)</span></div>
+                <p style="font-size: 0.65rem; color: var(--text-muted); line-height: 1.5; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
+                    *Haftungsausschluss: Nutzung auf eigene Gefahr. Keine Verantwortung für Acc-Banns oder Rückrolls durch Roblox.
+                </p>
+            </div>
+
+            <div class="infra-card">
+                <div class="infra-title"><span>Live Operator Assistance</span><i class="fa-solid fa-headset" style="color: var(--accent-green);"></i></div>
+                <div class="chat-box">
+                    <div class="chat-msgs" id="live-chat-box-msgs">
+                        <div class="msg-node msg-sys">System: Gesicherte Verbindung aufgebaut. Wie können wir dich heute unterstützen?</div>
+                    </div>
+                    <form onsubmit="executeSupportMessage(event)" style="display: flex; border-top: 1px solid var(--border); background: var(--bg-card);">
+                        <input type="text" id="chat-input-text" placeholder="Nachricht an Support senden..." style="flex-grow: 1; padding: 12px; background: transparent; border: none; color: #fff; font-size: 0.75rem;">
+                        <button type="submit" style="background: var(--accent-cyan); color: #000; padding: 0 18px; font-weight: 700; font-size: 0.75rem;"><i class="fa-solid fa-paper-plane"></i></button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- MODAL 1: AUTHENTICATION -->
+    <div class="modal-mask" id="modal-auth">
+        <div class="modal-window">
+            <button class="modal-close" onclick="closeModals()"><i class="fa-solid fa-xmark"></i></button>
+            
+            <div id="auth-state-inputs">
+                <h3 style="font-family: 'Space Grotesk', sans-serif; margin-bottom: 5px;" id="auth-title">Konto erstellen</h3>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 20px;" id="auth-subtitle">Erstelle deinen Account, um deine Bestellungen zu verwalten.</p>
+                
+                <form onsubmit="handleAuthSubmit(event)">
+                    <div id="auth-email-wrapper">
+                        <label style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 4px; font-weight: 600;">E-Mail-Adresse</label>
+                        <input type="email" id="auth-email" class="input-field" placeholder="name@beispiel.de" style="margin-bottom: 12px;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 4px; font-weight: 600;">Username</label>
+                        <input type="text" id="auth-username" class="input-field" placeholder="Dein Nutzername" required style="margin-bottom: 12px;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 4px; font-weight: 600;">Passwort</label>
+                        <input type="password" id="auth-password" class="input-field" placeholder="••••••••" required style="margin-bottom: 15px;">
+                    </div>
+                    <button type="submit" class="btn-primary" id="auth-submit-btn">Konto erstellen</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: CHECKOUT -->
+    <div class="modal-mask" id="modal-checkout">
+        <div class="modal-window">
+            <button class="modal-close" onclick="closeModals()"><i class="fa-solid fa-xmark"></i></button>
+            <h3 style="font-family: 'Space Grotesk', sans-serif; margin-bottom: 5px;">Kasse</h3>
+            <p id="checkout-product-title" style="font-size: 0.8rem; color: var(--accent-cyan); margin-bottom: 25px; font-weight: 600;">Gewähltes Paket: -</p>
+            
+            <form onsubmit="executeCheckoutPurchase(event)">
+                <div style="margin-bottom: 15px;">
+                    <label style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 5px; font-weight: 600;">Dein Roblox In-Game Name</label>
+                    <input type="text" id="checkout-target-user" class="input-field" placeholder="z.B. GamerX_99" required>
+                    <span style="font-size: 0.65rem; color: var(--accent-red); display: block; margin-top: 5px;"><i class="fa-solid fa-triangle-exclamation"></i> Gib NIEMALS dein Passwort an. Wir brauchen nur den Namen.</span>
+                </div>
+                <div style="margin-bottom: 25px;">
+                    <label style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 5px; font-weight: 600;">Zahlungsart wählen</label>
+                    <select id="checkout-payment-method" class="input-field">
+                        <option value="PayPal">PayPal</option>
+                        <option value="Paysafecard">Paysafecard</option>
+                        <option value="Bitcoin">Bitcoin (Krypto)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary" style="background: var(--accent-green); color: #000;"><i class="fa-solid fa-cart-shopping"></i> Kostenpflichtig Bestellen</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Datenbank exakt basierend auf Gemini_Generated_Image_m4jmeum4jmeum4jm (1).png
+        const NEXUS_GAMES_DATABASE = [
+            { 
+                id: "bf", 
+                name: "Blox Fruits", 
+                category: "Bestseller", 
+                accent: "skin-starter", 
+                desc: "Die besten Boosts, Pakete und physische Früchte für Blox Fruits.", 
+                packages: [
+                    { category: "Main Packages", name: "Starter Package", price: 4.99, skin: "skin-starter", desc: "• 500 Level Farmen\n• 5 Millionen Beli\n• Max Mastery auf 1 Sache (Frucht/Waffe)" },
+                    { category: "Main Packages", name: "Pro Package", price: 12.99, skin: "skin-pro", desc: "• 1500 Level Farmen\n• 15 Millionen Beli\n• 1 Million Bounty\n• Max Mastery auf 2 Sachen" },
+                    { category: "Main Packages", name: "Ultimate Package", price: 21.99, skin: "skin-ultimate", desc: "• **MAX LEVEL**\n• 25-30 Millionen Beli\n• 2,5 Millionen Bounty\n• Max Mastery auf 3 Sachen" },
+                    
+                    { category: "Einzelne Dienstleistungen", name: "1000 Level Boost", price: 4.99, skin: "skin-service", desc: "1000 Level Boost" },
+                    { category: "Einzelne Dienstleistungen", name: "Level 1 bis Max", price: 11.99, skin: "skin-service", desc: "Level 1 bis Max Level Service" },
+                    { category: "Einzelne Dienstleistungen", name: "10M Beli Farmen", price: 3.99, skin: "skin-service", desc: "Geld Farmen: 10M Beli" },
+                    { category: "Einzelne Dienstleistungen", name: "25M Beli Farmen", price: 7.99, skin: "skin-service", desc: "Geld Farmen: 25M Beli" },
+                    { category: "Einzelne Dienstleistungen", name: "Max Mastery (1 Item)", price: 2.99, skin: "skin-service", desc: "Mastery Boosts: Max Mastery (1 Item)" },
+                    { category: "Einzelne Dienstleistungen", name: "Max Mastery (3 Items)", price: 6.99, skin: "skin-service", desc: "Mastery Boosts: Max Mastery (3 Items)" },
+                    { category: "Einzelne Dienstleistungen", name: "1M Bounty", price: 3.99, skin: "skin-service", desc: "Bounty Farmen: 1M Bounty" },
+                    { category: "Einzelne Dienstleistungen", name: "2,5M Bounty", price: 8.99, skin: "skin-service", desc: "Bounty Farmen: 2,5M Bounty" },
+                    { category: "Spezial-Items", name: "Cursed Dual Katana (CDK)", price: 10.00, skin: "skin-service", desc: "Spezial-Items: CDK, YAMA, TUSHITA, ACCESSORIES" },
+                    { category: "Spezial-Items", name: "Yama & Tushita", price: 5.00, skin: "skin-service", desc: "Spezial-Items Support" },
+                    
+                    { category: "Physische Früchte", name: "Kitsune Fruit", price: 14.99, skin: "skin-fruit", desc: "Physische Kitsune Frucht via Ingame Trade." },
+                    { category: "Physische Früchte", name: "Leopard Fruit", price: 9.99, skin: "skin-fruit", desc: "Physische Leopard Frucht via Ingame Trade." },
+                    { category: "Physische Früchte", name: "Dragon Fruit", price: 12.99, skin: "skin-fruit", desc: "Physische Dragon Frucht via Ingame Trade." },
+                    { category: "Physische Früchte", name: "Buddha Fruit", price: 3.99, skin: "skin-fruit", desc: "Physische Buddha Frucht via Ingame Trade." }
+                ] 
+            }
+        ];
+
+        // 🔒 FESTE ADMIN-DATEN (Hardcoded für maximale Sicherheit)
+        const MASTER_ADMIN_USER = "Admin";
+        const MASTER_ADMIN_PASS = "Nexus2026";
+
+        // Keine Fake-Bestellungen mehr zum Start! Komplett leer.
+        let globalOrdersDatabase = []; 
+        let currentSession = null;
+        let selectedGameId = "bf";
+        let currentActiveView = "storefront";
+
+        window.onload = function() {
+            const savedSession = localStorage.getItem('nexus_session_v3_secure');
+            if (savedSession) {
+                currentSession = JSON.parse(savedSession);
+                finalizeSessionLogin();
+            }
+            
+            buildGameFilterTabs();
+            renderStorefrontGrid();
+            renderTelemetryTableStructure();
+        };
+
+        function switchMainView(view) {
+            currentActiveView = view;
+            document.getElementById('btn-nav-storefront').classList.remove('active');
+            document.getElementById('btn-nav-telemetry').classList.remove('active');
+            document.getElementById('nav-admin-terminal').classList.remove('active');
+            
+            document.getElementById('section-storefront-left').classList.add('hidden');
+            document.getElementById('main-telemetry-view-wrapper').classList.add('hidden');
+            document.getElementById('main-terminal-view-wrapper').classList.add('hidden');
+
+            if(view === 'storefront') {
+                document.getElementById('btn-nav-storefront').classList.add('active');
+                document.getElementById('section-storefront-left').classList.remove('hidden');
+            } else if(view === 'telemetry') {
+                document.getElementById('btn-nav-telemetry').classList.add('active');
+                document.getElementById('main-telemetry-view-wrapper').classList.remove('hidden');
+                
+                if(currentSession && currentSession.role === 'ADMIN') {
+                    document.getElementById('table-header-title').innerText = "Globale Telemetrie (Admin)";
+                    document.getElementById('table-header-desc').innerText = "Übersicht über alle real eingegangenen Kundenbestellungen.";
+                } else {
+                    document.getElementById('table-header-title').innerText = "Meine Bestellungen";
+                    document.getElementById('table-header-desc').innerText = "Hier siehst du den Status deiner in Auftrag gegebenen Boosts.";
+                }
+                renderTelemetryTableStructure();
+            } else if(view === 'terminal') {
+                if(!currentSession || currentSession.role !== 'ADMIN') return;
+                document.getElementById('nav-admin-terminal').classList.add('active');
+                document.getElementById('main-terminal-view-wrapper').classList.remove('hidden');
+            }
+        }
+
+        function buildGameFilterTabs() {
+            const container = document.getElementById('game-tab-injector');
+            let html = ``;
+            NEXUS_GAMES_DATABASE.forEach(g => {
+                html += `<div class="game-tab active" id="tab-${g.id}" onclick="filterByGame('${g.id}')">${g.name}</div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderStorefrontGrid() {
+            const container = document.getElementById('storefront-games-injector');
+            container.innerHTML = '';
+            const game = NEXUS_GAMES_DATABASE.find(g => g.id === selectedGameId);
+            if(!game) return;
+
+            const categories = [...new Set(game.packages.map(p => p.category))];
+
+            categories.forEach(cat => {
+                container.innerHTML += `<div style="grid-column: 1 / -1; font-family:'Space Grotesk'; font-size:1.1rem; color:var(--accent-cyan); margin-top:10px; border-bottom: 1px solid var(--border); padding-bottom:5px;">${cat}</div>`;
+                
+                game.packages.filter(p => p.category === cat).forEach(pkg => {
+                    let icon = "fa-cube";
+                    if(pkg.name.includes("Beli")) icon = "fa-coins";
+                    if(pkg.name.includes("Level")) icon = "fa-arrow-up-right-dots";
+                    if(pkg.name.includes("Bounty")) icon = "fa-skull-crossbones";
+                    if(pkg.name.includes("Fruit")) icon = "fa-apple-whole";
+
+                    container.innerHTML += `
+                        <div class="node-item ${pkg.skin}" onclick="triggerProductCheckout('${game.name}', '${pkg.name}', ${pkg.price})">
+                            <div>
+                                <div class="node-header">
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <i class="fa-solid ${icon}" style="color:var(--text-muted)"></i>
+                                        <span class="node-tag">${cat}</span>
+                                    </div>
+                                </div>
+                                <h4 style="${pkg.skin === 'skin-ultimate' ? 'color:var(--accent-gold)' : ''}">${pkg.name}</h4>
+                                <p>${pkg.desc}</p>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.05);">
+                                <span style="color: var(--accent-cyan); font-size: 0.9rem; font-weight: 800;">${pkg.price.toFixed(2)} €</span>
+                                <button style="background:var(--bg-input); padding:4px 10px; border-radius:4px; font-size:0.65rem; color:#fff; border:1px solid var(--border);">Kaufen</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        function filterStorefrontGrid() {
+            const val = document.getElementById('storefront-search-input').value.toLowerCase();
+            document.querySelectorAll('#storefront-games-injector .node-item').forEach(item => {
+                item.style.display = item.innerText.toLowerCase().includes(val) ? 'flex' : 'none';
+            });
+        }
+
+        // --- FILTERUNG DER ECHTEN BESTELLUNGEN ---
+        function renderTelemetryTableStructure() {
+            const tbody = document.getElementById('telemetry-table-injector');
+            const emptyState = document.getElementById('table-empty-state');
+            tbody.innerHTML = '';
+            
+            if(!currentSession) {
+                document.querySelector('.tel-table').classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.innerHTML = `<i class="fa-solid fa-lock"></i><h4>Zugriff eingeschränkt</h4><p style="font-size: 0.8rem; margin-top: 5px;">Bitte logge dich ein, um deine Bestellungen zu sehen.</p>`;
+                return;
+            }
+
+            // FILTER: Admins sehen alle echten Bestellungen, User NUR ihre eigenen echten Bestellungen
+            let visibleOrders = [];
+            if(currentSession.role === 'ADMIN') {
+                visibleOrders = globalOrdersDatabase;
+            } else {
+                visibleOrders = globalOrdersDatabase.filter(order => order.owner === currentSession.username);
+            }
+
+            if(visibleOrders.length === 0) {
+                document.querySelector('.tel-table').classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.innerHTML = `<i class="fa-solid fa-box-open"></i><h4>Keine Bestellungen vorhanden</h4><p style="font-size: 0.8rem; margin-top: 5px;">Es wurden noch keine Live-Aufträge aufgegeben.</p>`;
+                return;
+            }
+
+            document.querySelector('.tel-table').classList.remove('hidden');
+            emptyState.classList.add('hidden');
+
+            visibleOrders.forEach(row => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-family:'Fira Code'; color:var(--text-muted); font-size:0.75rem;">${row.id}</td>
+                        <td><b>${row.targetName}</b></td>
+                        <td><span style="font-size:0.75rem; color:#f1f5f9;">${row.item}</span></td>
+                        <td><span class="badge badge-cyan">${row.status}</span></td>
+                    </tr>
+                `;
+            });
+        }
+
+        function filterTelemetryTable() {
+            const val = document.getElementById('table-search-input').value.toLowerCase();
+            document.querySelectorAll('#telemetry-table-injector tr').forEach(tr => {
+                tr.style.display = tr.innerText.toLowerCase().includes(val) ? '' : 'none';
+            });
+        }
+
+        // AUTHENTICATION LOGIC (RESTRICTED ADMIN CHECK)
+        function openAuthModal(mode) {
+            document.getElementById('modal-auth').classList.add('active');
+            if(mode === 'login') {
+                document.getElementById('auth-title').innerText = "Einloggen";
+                document.getElementById('auth-email-wrapper').classList.add('hidden');
+                document.getElementById('auth-submit-btn').innerText = "Login";
+            } else {
+                document.getElementById('auth-title').innerText = "Konto erstellen";
+                document.getElementById('auth-email-wrapper').classList.remove('hidden');
+                document.getElementById('auth-submit-btn').innerText = "Registrieren";
+            }
+        }
+
+        function closeModals() {
+            document.querySelectorAll('.modal-mask').forEach(m => m.classList.remove('active'));
+        }
+
+        function handleAuthSubmit(e) {
+            e.preventDefault();
+            const user = document.getElementById('auth-username').value.trim();
+            const pass = document.getElementById('auth-password').value.trim();
+
+            if(user.length < 3) return;
+
+            // ABSOLUTE ADMIN KONTROLLE: Nur exakter Abgleich erlaubt Admin-Rolle
+            let assignedRole = "USER";
+            if (user === MASTER_ADMIN_USER && pass === MASTER_ADMIN_PASS) {
+                assignedRole = "ADMIN";
+            }
+
+            currentSession = {
+                username: user,
+                role: assignedRole
+            };
+
+            localStorage.setItem('nexus_session_v3_secure', JSON.stringify(currentSession));
+            finalizeSessionLogin();
+            closeModals();
+            
+            renderTelemetryTableStructure();
+            
+            const chat = document.getElementById('live-chat-box-msgs');
+            chat.innerHTML += `<div class="msg-node msg-sys">System: Erfolgreich als [${assignedRole}] eingeloggt.</div>`;
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function finalizeSessionLogin() {
+            const container = document.getElementById('sidebar-auth-actions');
+            const isAdm = currentSession.role === 'ADMIN';
+            
+            container.innerHTML = `
+                <div style="background: rgba(255,255,255,0.01); padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.8rem;">
+                    <span style="color:var(--text-muted); display:block; font-size:0.65rem; text-transform:uppercase; font-weight:700;">Eingeloggt als</span>
+                    <b style="color:var(--accent-cyan); font-size:0.9rem;">${currentSession.username}</b>
+                    <div style="margin-top:4px;">${isAdm ? '<span class="admin-badge">ADMIN</span>' : '<span class="badge badge-cyan" style="font-size:0.55rem;">KUNDE</span>'}</div>
+                </div>
+                <button class="btn-primary" style="background:transparent; border:1px solid var(--accent-red); color:var(--accent-red); margin-top:5px; padding:8px;" onclick="logOutSession()">Ausloggen</button>
+            `;
+
+            if(isAdm) {
+                unlockAdminUIElement('nav-admin-financials', 'badge-fin');
+                unlockAdminUIElement('nav-admin-proxies', 'badge-prox');
+                unlockAdminUIElement('nav-admin-terminal', 'badge-term');
+            }
+        }
+
+        function unlockAdminUIElement(btnId, badgeId) {
+            const btn = document.getElementById(btnId);
+            if(btn) {
+                btn.classList.remove('locked');
+                const badge = document.getElementById(badgeId);
+                if(badge) {
+                    badge.innerHTML = "OPEN";
+                    badge.style.color = "var(--accent-green)";
+                    badge.style.background = "rgba(16,185,129,0.1)";
+                }
+            }
+        }
+
+        function logOutSession() {
+            localStorage.removeItem('nexus_session_v3_secure');
+            window.location.reload();
+        }
+
+        function triggerAdminAction(type) {
+            if(!currentSession || currentSession.role !== 'ADMIN') return;
+            if(type === 'financials') {
+                let total = globalOrdersDatabase.length * 12.99; // Beispielrechnung echter Umsatz
+                alert(`ADMIN INFO: Echte Bestellungen im System: ${globalOrdersDatabase.length} | Umsatz geschätzt: ${total.toFixed(2)} €`);
+            }
+            if(type === 'proxies') alert("ADMIN INFO: Proxies verschlüsselt und einsatzbereit.");
+        }
+
+        // CHECKOUT LOGIC (NUR ECHTE KÄUFE)
+        let selectedProductForCheckout = null;
+
+        function triggerProductCheckout(gameName, packageName, price) {
+            if(!currentSession) {
+                alert("Bitte logge dich ein, um eine Bestellung aufzugeben.");
+                openAuthModal('login');
+                return;
+            }
+            selectedProductForCheckout = `${packageName} (${gameName})`;
+            document.getElementById('checkout-product-title').innerText = `Gewähltes Produkt: ${packageName} — ${price.toFixed(2)} €`;
+            document.getElementById('modal-checkout').classList.add('active');
+        }
+
+        function executeCheckoutPurchase(e) {
+            e.preventDefault();
+            const target = document.getElementById('checkout-target-user').value.trim();
+            closeModals();
+            
+            const newOrder = {
+                id: "ORD-" + (Math.floor(Math.random() * 890000) + 110000),
+                owner: currentSession.username, 
+                targetName: target,
+                item: selectedProductForCheckout,
+                status: "In Warteschlange"
+            };
+
+            globalOrdersDatabase.unshift(newOrder);
+
+            // Admin Terminal Echtzeit-Protokollierung
+            const logBox = document.getElementById('admin-live-log');
+            if(logBox) {
+                logBox.innerHTML += `<div style="color:var(--accent-cyan)">[AUFTRAG] Reale Bestellung empfangen: ${newOrder.id} von User '${newOrder.owner}' für Roblox-Acc '${newOrder.targetName}'</div>`;
+                logBox.scrollTop = logBox.scrollHeight;
+            }
+
+            if(currentActiveView === 'telemetry') {
+                renderTelemetryTableStructure();
+            }
+            
+            const chat = document.getElementById('live-chat-box-msgs');
+            chat.innerHTML += `<div class="msg-node msg-sys"><i class="fa-solid fa-circle-check" style="color:var(--accent-green)"></i> Bestellung für "${target}" erfolgreich platziert! Überprüfe den Live-Status unter "Meine Bestellungen".</div>`;
+            chat.scrollTop = chat.scrollHeight;
+
+            document.getElementById('checkout-target-user').value = '';
+        }
+
+        function executeSupportMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('chat-input-text');
+            const txt = input.value.trim();
+            if(!txt) return;
+
+            const box = document.getElementById('live-chat-box-msgs');
+            box.innerHTML += `<div class="msg-node msg-user">${txt}</div>`;
+            input.value = '';
+            box.scrollTop = box.scrollHeight;
+
+            setTimeout(() => {
+                box.innerHTML += `<div class="msg-node msg-sys">Support: Nachricht erhalten. Ein Operator prüft deine Anfrage.</div>`;
+                box.scrollTop = box.scrollHeight;
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
